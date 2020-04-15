@@ -3,11 +3,14 @@ package _8_stack
 import "testing"
 
 func TestArrayStack_Push(t *testing.T) {
+    var s Stack
     stack := NewArrayStack()
+    s = stack
     stack.Push(1)
     stack.Push(2)
     stack.Push(3)
     stack.Push(4)
+    s.Push(5)
     stack.Print()
 }
 
