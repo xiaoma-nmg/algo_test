@@ -9,9 +9,11 @@ import (
 
 const (
 	// 最高层数
-	MaxLEVEL = 16
+	SKIPLISTMAXLEVEL = 32
+	SKIPLIST_P       = 2
 )
 
+//表结点数据结构
 type SkipListNode struct {
 	val      interface{}
 	score    int
@@ -19,6 +21,7 @@ type SkipListNode struct {
 	forwards []*SkipListNode
 }
 
+//跳表数据结构
 type SkipList struct {
 	head   *SkipListNode
 	level  int
@@ -35,7 +38,7 @@ func NewSkipListNode(val interface{}, score int, level int) *SkipListNode {
 }
 
 func NewSkipList() *SkipList {
-	head := NewSkipListNode(0, math.MinInt32, MaxLEVEL)
+	head := NewSkipListNode(0, math.MinInt32, SKIPLISTMAXLEVEL)
 	return &SkipList{
 		head:   head,
 		level:  1,
@@ -51,15 +54,27 @@ func (s *SkipList) Length() int {
 	return s.length
 }
 
+// 产生随机层数，抛硬币思想
+func RandLevel() int {
+	level := 1
+	for (rand.Int31()&0xFFFF)%SKIPLIST_P == 0 {
+		level++
+	}
+	if level > SKIPLISTMAXLEVEL {
+		return SKIPLISTMAXLEVEL
+	}
+	return level
+}
+
 func (s *SkipList) Insert(val interface{}, score int) error {
 	if val == nil {
 		return errors.New("can not insert nil value")
 	}
 
 	cur := s.head
-	levelStart := [MaxLEVEL]*SkipListNode{}
+	levelStart := [SKIPLISTMAXLEVEL]*SkipListNode{}
 
-	for i := MaxLEVEL - 1; i >= 0; i-- {
+	for i := SKIPLISTMAXLEVEL - 1; i >= 0; i-- {
 		for cur.forwards[i] != nil {
 			if cur.forwards[i].val == val {
 				return errors.New("value exist")
@@ -75,13 +90,8 @@ func (s *SkipList) Insert(val interface{}, score int) error {
 		}
 	}
 
-	// 通过随机算法获取该节点的层数
-	level := 1
-	for i := 1; i < MaxLEVEL; i++ {
-		if rand.Int31()%7 == 1 {
-			level++
-		}
-	}
+	// 通过随机算法获取将要插入的节点从哪层开始
+	level := RandLevel()
 
 	newNode := NewSkipListNode(val, score, level)
 	//  插入
@@ -100,16 +110,16 @@ func (s *SkipList) Insert(val interface{}, score int) error {
 	return nil
 }
 
-func (s *SkipList) Search(val interface{}, score int) *SkipListNode {
+func (s *SkipList) Search(val interface{}, score int) (*SkipListNode, bool) {
 	if val == nil || s.length == 0 {
-		return nil
+		return nil, false
 	}
 
 	cur := s.head
 	for i := s.level - 1; i >= 0; i-- {
 		for cur.forwards[i] != nil {
 			if cur.forwards[i].score == score && cur.forwards[i].val == val {
-				return cur.forwards[i]
+				return cur.forwards[i], true
 			} else if cur.forwards[i].score > score {
 				break
 			}
@@ -117,7 +127,7 @@ func (s *SkipList) Search(val interface{}, score int) *SkipListNode {
 		}
 	}
 
-	return nil
+	return nil, false
 }
 
 func (s *SkipList) Delete(val interface{}, score int) error {
@@ -126,7 +136,7 @@ func (s *SkipList) Delete(val interface{}, score int) error {
 	}
 
 	cur := s.head
-	levelStart := [MaxLEVEL]*SkipListNode{}
+	levelStart := [SKIPLISTMAXLEVEL]*SkipListNode{}
 	for i := s.level - 1; i >= 0; i-- {
 		levelStart[i] = s.head
 		for cur.forwards[i] != nil {
