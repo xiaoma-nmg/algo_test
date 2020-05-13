@@ -58,3 +58,14 @@ func Select(data []int) {
 		data[i], data[min] = data[min], data[i]
 	}
 }
+
+func Shell(data []int) {
+	length := len(data)
+	for gap := length / 2; gap > 0; gap /= 2 {
+		for i := gap; i < length; i++ {
+			for j := i; j >= gap && data[j] < data[j-gap]; j -= gap {
+				data[j], data[j-gap] = data[j-gap], data[j]
+			}
+		}
+	}
+}
